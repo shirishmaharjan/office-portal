@@ -1,17 +1,16 @@
 'use client'
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use as useReact } from 'react'
 import { supabase } from '@/lib/supabase'
+import { FileText, Database, Map, Image, Users, Layout, Lock, Download, ChevronRight } from 'lucide-react'
 
 export default function ProjectDetails({ params }) {
-  const resolvedParams = use(params);
+  const resolvedParams = useReact(params);
   const id = resolvedParams.id;
 
   const [project, setProject] = useState(null)
   const [files, setFiles] = useState([])
   const [user, setUser] = useState(null)
-  const [activeTab, setActiveTab] = useState('Publications') 
-
-  const categories = ['Data', 'Publications', 'Methods', 'Team', 'Gallery', 'Reports'];
+  const [activeTab, setActiveTab] = useState('Data')
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user))
@@ -19,106 +18,113 @@ export default function ProjectDetails({ params }) {
     supabase.from('files').select('*').eq('project_id', id).then(({ data }) => setFiles(data || []))
   }, [id])
 
-  // Function to handle the Email Request
-  const handleRequestAccess = (fileName) => {
-    const recipient = "datascience@herdint.com";
-    const subject = encodeURIComponent(`Data Request: ${project?.name} - ${fileName}`);
-    const body = encodeURIComponent(
-      `Dear Data Science Team,\n\nI would like to request access to the dataset: ${fileName}.\n\n` +
-      `My Name: \n` +
-      `Organization: \n` +
-      `Reason for requesting this data (Justification): \n\n` +
-      `I agree to the data usage terms of HERD International.`
-    );
-    
-    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
-  };
+  const categories = [
+    { name: 'Data', icon: Database, count: files.filter(f => f.category === 'Data').length },
+    { name: 'Methods', icon: Layout, count: files.filter(f => f.category === 'Methods').length },
+    { name: 'Publications', icon: FileText, count: files.filter(f => f.category === 'Publications').length },
+    { name: 'Reports', icon: FileText, count: files.filter(f => f.category === 'Reports').length },
+    { name: 'Maps & GIS', icon: Map, count: files.filter(f => f.category === 'Gallery').length },
+    { name: 'Team', icon: Users, count: 5 },
+  ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* SIDEBAR EXPLORER */}
-      <div className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-        <a href="/" className="text-sm text-blue-600 mb-8 flex items-center hover:underline">← Dashboard</a>
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Project Folders</h2>
-        <nav className="space-y-1">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveTab(cat)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition ${
-                activeTab === cat ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </nav>
+    <div className="bg-[#F8F9FA] min-h-screen pb-20">
+      {/* Header / Breadcrumbs */}
+      <div className="max-w-7xl mx-auto px-6 py-4 text-sm text-gray-500">
+        Home / Projects / <span className="font-semibold text-gray-900">{project?.name}</span>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 p-10">
-        <div className="max-w-4xl">
-          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
-            {project?.theme || 'Research Project'}
-          </span>
-          <h1 className="text-4xl font-extrabold text-gray-900 mt-2 mb-4">{project?.name}</h1>
-          <p className="text-gray-600 text-lg mb-8 leading-relaxed">{project?.description}</p>
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Project Hero Card */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 mb-8 shadow-sm">
+          <div className="flex items-center space-x-2 text-xs font-bold text-teal-600 uppercase mb-4">
+            <span>{project?.theme}</span>
+            <span>•</span>
+            <span>{project?.name}</span>
+          </div>
+          <h1 className="text-5xl font-serif text-gray-900 mb-6">{project?.name}</h1>
+          <p className="text-gray-600 text-lg max-w-4xl mb-10 leading-relaxed">{project?.description}</p>
+          
+          <div className="grid grid-cols-5 gap-8 border-t border-gray-100 pt-8">
+            <div><p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Thematic Area</p><p className="font-medium">{project?.theme}</p></div>
+            <div><p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Period</p><p className="font-medium">{project?.period}</p></div>
+            <div><p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Funder</p><p className="font-medium">{project?.funder}</p></div>
+            <div><p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Status</p><p className="font-medium">{project?.status}</p></div>
+            <div><p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Countries</p><p className="font-medium">{project?.countries}</p></div>
+          </div>
+        </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
-              <h3 className="font-bold text-gray-700">{activeTab} Files</h3>
-              {!user && (
-                <span className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 font-medium">
-                  🔒 Some files may require access request
-                </span>
-              )}
+        <div className="flex gap-8">
+          {/* Sidebar */}
+          <div className="w-64 flex-shrink-0">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Project Folders</p>
+            <div className="space-y-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => setActiveTab(cat.name)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                    activeTab === cat.name ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <cat.icon size={18} />
+                    <span className="text-sm font-medium">{cat.name}</span>
+                  </div>
+                  <span className="text-xs font-bold opacity-50">{cat.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* File Table Content */}
+          <div className="flex-1 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-8 py-6 border-b border-gray-100 flex items-center space-x-4 bg-gray-50/30">
+              <Database className="text-amber-500" size={24} />
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">{activeTab} Files</h3>
+                <p className="text-sm text-gray-500">Datasets and research materials for this project.</p>
+              </div>
             </div>
 
-            <ul className="divide-y divide-gray-100">
-              {files.filter(f => f.category === activeTab).length === 0 ? (
-                <li className="p-10 text-center text-gray-400 italic">No files in the "{activeTab}" folder.</li>
-              ) : (
-                files.filter(f => f.category === activeTab).map(file => (
-                  <li key={file.id} className="p-4 flex justify-between items-center hover:bg-gray-50 transition">
-                    <div className="flex items-center space-x-4">
-                      <div className="bg-gray-100 p-2 rounded text-2xl">
-                        {file.file_name.endsWith('.pdf') ? '📄' : '📊'}
-                      </div>
-                      <div>
-                        <p className={`font-semibold ${file.is_private && !user ? 'text-gray-500' : 'text-gray-800'}`}>
-                          {file.file_name} {file.is_private && '🔒'}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">Project Asset • 2024</p>
-                      </div>
-                    </div>
-
-                    {/* ACTION BUTTON LOGIC */}
-                    {file.is_private && !user ? (
-                      <button 
-                        onClick={() => handleRequestAccess(file.file_name)}
-                        className="text-xs font-bold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-sm transition"
-                      >
-                        REQUEST ACCESS
-                      </button>
-                    ) : (
-                      <a 
-                        href={file.file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm font-bold text-blue-600 border border-blue-600 px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition"
-                      >
-                        Download
-                      </a>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100">
+                <tr>
+                  <th className="px-8 py-4">File Name</th>
+                  <th className="px-4 py-4">Type</th>
+                  <th className="px-4 py-4">Date</th>
+                  <th className="px-4 py-4">Size</th>
+                  <th className="px-8 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 text-sm">
+                {files.filter(f => f.category === activeTab || (activeTab === 'Data' && f.category === 'Data')).map(file => (
+                  <tr key={file.id} className="hover:bg-gray-50/50 transition">
+                    <td className="px-8 py-5 flex items-center space-x-3 font-medium text-gray-700 italic">
+                      <FileText size={16} className="text-gray-300" />
+                      <span>{file.file_name}</span>
+                    </td>
+                    <td className="px-4 py-5 font-mono text-[10px] text-gray-400 uppercase tracking-tighter">
+                      <span className="border border-gray-200 px-2 py-0.5 rounded">{file.file_type || 'PDF'}</span>
+                    </td>
+                    <td className="px-4 py-5 text-gray-400">{file.upload_date || 'Jan 2024'}</td>
+                    <td className="px-4 py-5 text-gray-400">{file.file_size || '1.2 MB'}</td>
+                    <td className="px-8 py-5 text-right">
+                      {file.is_private && !user ? (
+                        <button className="bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center space-x-2">
+                          <Lock size={12} /> <span>REQUEST ACCESS</span>
+                        </button>
+                      ) : (
+                        <a href={file.file_url} className="text-gray-400 hover:text-blue-600 flex items-center justify-end space-x-1 text-xs font-bold transition">
+                          <span>DOWNLOAD</span> <Download size={14} />
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          
-          <p className="mt-6 text-sm text-gray-400 text-center">
-            For technical support regarding datasets, contact HERD International Data Science Team.
-          </p>
         </div>
       </div>
     </div>
